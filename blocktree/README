@@ -1,0 +1,13 @@
+Timber! - append-only logging with "blocktrees."
+
+The following code was written for a talk given on RFC 6962 "blocktrees",
+14 Oct 2016.  However, it uses a cryptographically weaker checksum because
+it was written for demonstration purposes - it would be quite simple to
+replace it with a stronger checksum.
+
+How to compile:
+	gcc -Wall -o timber timber.c -lz
+
+How to run:
+	./timber words
+where 'words' is a file with words in it, one per line.
