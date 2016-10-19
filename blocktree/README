@@ -11,3 +11,8 @@ How to compile:
 How to run:
 	./timber words
 where 'words' is a file with words in it, one per line.
+
+The code is used only for teaching purposes, so the tree has only words in
+it, rather than certificates or certificate requests, and there are no signatures.
+The purpose is to repurpose the "blocktrees" and study what else they can do,
+rather than provide a full implementation of RFC 6962.
