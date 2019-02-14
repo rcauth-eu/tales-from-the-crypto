@@ -23,6 +23,8 @@ implementation.
   - Can run on older systems (and future systems)
   - Can run on a minimally installed system
 
+Note that the private key must be **unencrypted**.
+
 ## Implementation
 
 Not many languages have native BigInts.  Python and Common Lisp do,
@@ -43,8 +45,8 @@ key and a prime from it.  It then reconstructs the full private key,
 and writes it to a new file, called privkey.tmp.
 
     openssl genrsa -out privkey.pem 2048
-	./privkey.py
-	diff -qs privkey.pem privkey.tmp
+    ./privkey.py
+    diff -qs privkey.pem privkey.tmp
 
 The filenames are hardcoded here but it's just for the PoC.
 
