@@ -31,10 +31,13 @@ Not many languages have native BigInts.  Python and Common Lisp do,
 but the latter needs compilation for the target system (or a runtime
 environment).
 
+### Python version
+
 This code is written in Python.  Unlike Common Lisp, Python is highly
 version dependent, with functions appearing and disappearing.  This
-code was written with 3.5, but should in theory work with 3.2 or
-later.
+code was written with 3.5, but has been tested to work with 3.3 through
+to 3.7.  It does not work with 3.2 (or, presumably, earlier.)  See the
+separate file on portability tests.
 
 ## How to Use
 
