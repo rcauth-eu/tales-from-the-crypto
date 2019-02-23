@@ -44,6 +44,7 @@ import argparse
 import re
 from base64 import b64decode, b64encode
 from math import log,ceil
+from sys import version_info
 
 
 
@@ -57,6 +58,15 @@ from math import log,ceil
 # Section 3 ASN.1 writers
 
 
+# Portability hack; for now we try to support Python 2.7 as well as 3.X
+# Can't universally use names to address it because names are introduced only in 2.7
+p2 = version_info[0] == 2
+if(p2):
+    if(version_info.minor != 7):
+        print("Warning, for Python2 has been tested only with 2.7")
+else:
+    if(version_info.minor <= 2):
+        print("Warning, currently not expected to work with Python3 earlier than 3.3")
 
 
 
@@ -122,6 +132,29 @@ def powexp(a, k, m):
     return result
 
 
+# <int>.to_bytes() appears only in Python 3.2
+def to_bytes(i):
+    """ Convert an integer to a big endian byte array like .to_bytes() in later versions of Python3 """
+    if(0 > i):
+        raise ValueError("Not designed for negative numbers")
+    if(0 == i):
+        octets = bytearray(1)
+        return octets
+    k = i.bit_length()
+    leng = (k+7) // 8
+    octets = bytearray(leng)
+    while(i):
+        leng -= 1
+        if(leng < 0):
+            raise RuntimeError("to_bytes: can't happen (1) when byteifying {}".format(i))
+        octets[leng] = i & 0xff
+        i >>= 8
+    if( 0 != leng or octets[0] == b'\x00' ):
+        raise RuntimeError("to_bytes: can't happen (2) when byteifying {}".format(i))
+    return octets
+
+
+
 def mkprivkey(mod, exp, p):
     """ Using a public key in mod and exp, and the secret prime p, generate a list of 9 integers that provide the information for the private key """
     pkey = [0,mod,exp]          # Version, public key
@@ -160,7 +193,10 @@ def tryifpem(octets):
     if(k >= len(s1) and octets[0:len(s1)] == s1):
         # OK, it is probably PEM formatted...
         # https://stackoverflow.com/questions/606191/convert-bytes-to-a-string
-        s = octets.decode("ASCII")
+        if(p2):
+            s = octets
+        else:
+            s = octets.decode("ASCII")
         # re.fullmatch is only in version 3.4...
         pem = re.compile('-----BEGIN ([A-Z ]+)-----\n(.*)\n-----END ([A-Z ]+)-----$', re.DOTALL)
         o = pem.match(s)
@@ -170,7 +206,10 @@ def tryifpem(octets):
             what = o.group(1)
             try:
                 # validate=False makes the decoder accept embedded newlines
-                val = b64decode(o.group(2), altchars=None, validate=False)
+                if(p2):
+                    val = b64decode(o.group(2), altchars=None)
+                else:
+                    val = b64decode(o.group(2), altchars=None, validate=False)
             except binascii.Error as e:
                 raise RuntimeError("Failed to parse Base64: {}".format(e.args[0]))
         else:
@@ -240,6 +279,9 @@ def readtlvasn1(octets, offs, size):
         raise ValueError('tryparseasn1: offset value out of range at offset {}'.format(offs))
     tag = octets[offs] ; offs+= 1
     leng = octets[offs] ; offs+= 1
+    if(p2):
+        # In Python2 octets is a string
+        pass
     if(leng & 0x80):
         nbytes = leng & 0x7F 
         if(offs + nbytes >= size):
@@ -292,6 +334,8 @@ def readpubkey(filename):
             # "If source is an integer, the array is initialised with zeros"
             pubkey = bytearray(source=maxpubkeyfilesize)
             pubkeysize = f.readinto(pubkey)
+        if(p2):
+            pubkey = bytearray(pubkey)
         data = readtlvasn1(pubkey, 0, pubkeysize)
     except OSError as e:
         print('Failed to read file {}: {}'.format(filename,e.args))
@@ -305,9 +349,14 @@ def readprivkey(filename):
     """ The private key must be unencrypted RSA """
     with open(filename,'rb') as f:
         privkey = f.read()
+        if(p2):
+            privkey = bytearray(privkey)
         asn, what = tryifpem(privkey)
         if(what and debug):
             print("Found '{}'".format(what))
+        if(p2):
+            # Necessary(?) portability hack; fortunately bytearray(..) is idempotent
+            asn = bytearray(asn)
         data = readtlvasn1(asn, 0, len(asn))
     if(debug):
         print("Received {}".format(data[0]))
@@ -343,8 +392,9 @@ def writelengthasn1(length):
     if(length < 0x80):
         octets[0] = length
         return octets
-    u = (length.bit_length()+7)//8
-    o = length.to_bytes( length=u, byteorder='big', signed=False)
+    #o = length.to_bytes( length=u, byteorder='big', signed=False)
+    o = to_bytes(length)
+    u = len(o)
     octets[0] = 0x80 | u        # This will fail if the length is 2**(128*8)
     return octets+o
 
@@ -358,10 +408,9 @@ def writeinttlvasn1(i):
         h = 1
     else:
         h = i.bit_length()
-    # Length is the number of bytes required to store Value
-    length = (h+7) // 8
     # to_bytes is present in Python only as of 3.2
-    m = i.to_bytes(length=length,byteorder='big',signed=False)
+    m = to_bytes(i)
+    length = len(m)
 
     pad = bytearray(0)
     # If the MSB in the top byte is 1, we need a zero byte padding
@@ -386,6 +435,8 @@ def writeseqtlvasn1(seq):
             octets += writeinttlvasn1(y)
         elif(what == 'list'):
             octets += writeseqtlvasn1(y)
+        elif(what == 'long'):           # needed for Python2.7
+            octets += writeinttlvasn1(y)
         else:
             raise ValueError("Don't know how to encode {} yet".format(what))
     header = bytearray(1)
