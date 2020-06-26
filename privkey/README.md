@@ -1,3 +1,40 @@
+# RCauth branch and repository
+
+This branch contain a few extra scripts based on privkey.pem in
+https://github.com/stfc/tales-from-the-crypto/
+
+## Scripts and usage
+To extract a key, use `convert.py`, to reconstruct a key, use
+`convert_revert.py`.
+
+The aim is to have:
+- simple scripts that do all the steps
+- read from/write to pipe to allow openssl commands as input/output
+- writes no intermediate data on disk
+
+### NOTES
+- You will need to adapt the line starting with `input_cmd`.   
+  For `convert.py` it should produce an unencrypted rsa key on stdout, for
+  `convert_revert.py` it should `cat` a file with the output from `convert.py`.
+- The test private key has password `test`.
+- You can use the binary or ascii random data in `example_data/`.
+
+### Examples
+
+```
+./convert.py example_data/random_bin 0 example_data/random_asc 1000 > xor_data
+```
+
+```
+./convert_revert.py example_data/random_bin 0 example_data/random_asc 1000 > testkey.pem
+```
+
+To verify:
+
+```
+openssl rsa -in testkey.pem | diff - example_data/privkeyrsa_plain.pem
+```
+
 # Private Key Deconstruction and Reconstruction
 
 An RSA private key (as created with, for example, OpenSSL) contains a
@@ -23,8 +60,6 @@ implementation.
   - Can run on older systems (and future systems)
   - Can run on a minimally installed system
 
-Note that the private key must be **unencrypted**.
-
 ## Implementation
 
 Not many languages have native BigInts.  Python and Common Lisp do,
@@ -38,20 +73,6 @@ version dependent, with functions appearing and disappearing.  This
 code was written with 3.5, but has been tested to work with 3.3 through
 to 3.7.  It does not work with 3.2 (or, presumably, earlier.)  See the
 separate file on portability tests.
-
-## How to Use
-
-Currently this is a proof of concept, but the code contains all, or
-nearly all, of its full intended functionality.  The code reads a
-private key from a file called privkey.pem, and extracts the public
-key and a prime from it.  It then reconstructs the full private key,
-and writes it to a new file, called privkey.tmp.
-
-    openssl genrsa -out privkey.pem 2048
-    ./privkey.py
-    diff -qs privkey.pem privkey.tmp
-
-The filenames are hardcoded here but it's just for the PoC.
 
 # Acknowledgments
 
