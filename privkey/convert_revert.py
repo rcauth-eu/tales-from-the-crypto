@@ -48,7 +48,7 @@ if ( len(sys.argv)!=3 and len(sys.argv)!=5 ):
 try:
     # First try as ascii file, if that fails, try as binary
     with open(sys.argv[1]) as f:
-        xordata1 = bytearray(bytearray(f.read(), "ASCII").decode("hex"))
+        xordata1 = bytearray(bytearray(f.read().strip(), "ASCII").decode("hex"))
 except UnicodeDecodeError:
     # Try as binary instead
     with open(sys.argv[1], mode="rb") as f:
@@ -67,7 +67,7 @@ else:
     try:
         # First try as ascii file, if that files, try as binary
         with open(sys.argv[3]) as f:
-            xordata2 = bytearray(bytearray(f.read(), "ASCII").decode("hex"))
+            xordata2 = bytearray(bytearray(f.read().strip(), "ASCII").decode("hex"))
     except UnicodeDecodeError:
         # Try as binary
         with open(sys.argv[3], mode="rb") as f:
