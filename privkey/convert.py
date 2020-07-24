@@ -43,7 +43,7 @@ if ( len(sys.argv)!=3 and len(sys.argv)!=5 ):
 try:
     # First try as ascii file, if that fails, try as binary
     with open(sys.argv[1]) as f:
-        xordata1 = bytearray(f.read(), "ASCII")
+        xordata1 = bytearray(bytearray(f.read(), "ASCII").decode("hex"))
         #sys.stderr.write("Input 1 is ascii\n");
 except UnicodeDecodeError:
     # Try as binary instead
@@ -57,14 +57,14 @@ offset1=int(sys.argv[2])
 if (len(sys.argv) == 3):
     # Read second random from stdin
     sys.stderr.write("Enter second random: ")
-    xordata2=bytearray(sys.stdin.readline().strip(), "ASCII")
+    xordata2 = bytearray(bytearray(sys.stdin.readline().strip(), "ASCII").decode("hex"))
     offset2=0
 else:
     # Read second random from file
     try:
         # First try as ascii file, if that files, try as binary
         with open(sys.argv[3]) as f:
-            xordata2 = bytearray(f.read(), "ASCII")
+            xordata2 = bytearray(bytearray(f.read(), "ASCII").decode("hex"))
             #sys.stderr.write("Input 2 is ascii\n");
     except UnicodeDecodeError:
         # Try as binary
